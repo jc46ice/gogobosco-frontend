@@ -133,7 +133,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     /// ROLE
                     DropdownButtonFormField<String>(
-                      value: role,
+                      initialValue: role,
                       decoration: _decoration("Role"),
                       items: const [
                         DropdownMenuItem(
