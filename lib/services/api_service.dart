@@ -1,44 +1,125 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Base URL — change to your server IP/domain before production
+const String _baseUrl =
+    "http://10.0.2.2:8080/api"; // 10.0.2.2 = Android emulator localhost
 
 class ApiService {
-  static const String baseUrl =
-      "http://localhost:8080/"; //change this url for the actual api
+  // ─── Token Storage ─────────────────────────────────────────────────────────
+  static Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('jwt_token');
+  }
 
-  /// 🔹 POST request
+  static Future<void> saveToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('jwt_token', token);
+  }
+
+  static Future<void> clearToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('jwt_token');
+    await prefs.remove('user_data');
+  }
+
+  // ─── Base Headers ──────────────────────────────────────────────────────────
+  static Future<Map<String, String>> _headers({bool auth = false}) async {
+    final headers = <String, String>{"Content-Type": "application/json"};
+    if (auth) {
+      final token = await getToken();
+      if (token != null) headers["Authorization"] = "Bearer $token";
+    }
+    return headers;
+  }
+
+  // ─── Response Parser ───────────────────────────────────────────────────────
+  static Map<String, dynamic> _parse(http.Response response) {
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return body;
+    }
+    throw ApiException(
+      statusCode: response.statusCode,
+      message: body['message'] ?? "Something went wrong",
+    );
+  }
+
+  // ─── POST ──────────────────────────────────────────────────────────────────
   static Future<Map<String, dynamic>> post(
+    String endpoint,
+    Map<String, dynamic> data, {
+    bool auth = false,
+  }) async {
+    final url = Uri.parse("$_baseUrl$endpoint");
+    final response = await http.post(
+      url,
+      headers: await _headers(auth: auth),
+      body: jsonEncode(data),
+    );
+    return _parse(response);
+  }
+
+  // ─── GET ───────────────────────────────────────────────────────────────────
+  static Future<Map<String, dynamic>> get(
+    String endpoint, {
+    bool auth = false,
+    Map<String, String>? queryParams,
+  }) async {
+    var url = Uri.parse("$_baseUrl$endpoint");
+    if (queryParams != null) {
+      url = url.replace(queryParameters: queryParams);
+    }
+    final response = await http.get(url, headers: await _headers(auth: auth));
+    return _parse(response);
+  }
+
+  // ─── PUT ───────────────────────────────────────────────────────────────────
+  static Future<Map<String, dynamic>> put(
     String endpoint,
     Map<String, dynamic> data,
   ) async {
-    final url = Uri.parse("$baseUrl$endpoint");
-
-    final response = await http.post(
+    final url = Uri.parse("$_baseUrl$endpoint");
+    final response = await http.put(
       url,
-      headers: {"Content-Type": "application/json"},
+      headers: await _headers(auth: true),
       body: jsonEncode(data),
     );
-
-    final body = jsonDecode(response.body);
-
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return body;
-    } else {
-      throw Exception(body['message'] ?? "Something went wrong");
-    }
+    return _parse(response);
   }
 
-  /// 🔹 GET request
-  static Future<Map<String, dynamic>> get(String endpoint) async {
-    final url = Uri.parse("$baseUrl$endpoint");
-
-    final response = await http.get(url);
-
-    final body = jsonDecode(response.body);
-
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return body;
-    } else {
-      throw Exception(body['message'] ?? "Failed to fetch");
-    }
+  // ─── PATCH ─────────────────────────────────────────────────────────────────
+  static Future<Map<String, dynamic>> patch(
+    String endpoint, {
+    Map<String, dynamic>? data,
+  }) async {
+    final url = Uri.parse("$_baseUrl$endpoint");
+    final response = await http.patch(
+      url,
+      headers: await _headers(auth: true),
+      body: data != null ? jsonEncode(data) : null,
+    );
+    return _parse(response);
   }
+
+  // ─── DELETE ────────────────────────────────────────────────────────────────
+  static Future<Map<String, dynamic>> delete(String endpoint) async {
+    final url = Uri.parse("$_baseUrl$endpoint");
+    final response = await http.delete(
+      url,
+      headers: await _headers(auth: true),
+    );
+    return _parse(response);
+  }
+}
+
+class ApiException implements Exception {
+  final int statusCode;
+  final String message;
+
+  const ApiException({required this.statusCode, required this.message});
+
+  @override
+  String toString() => message;
 }
