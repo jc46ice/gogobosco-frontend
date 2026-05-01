@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gogobosco/services/auth_services.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,19 +19,31 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
   bool rememberMe = false;
 
-  /// ✅ LOGIN FUNCTION (FIXED)
+  /// LOGIN FUNCTION (FIXED)
   void login() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => isLoading = true);
 
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      final res = await AuthService.login(
+        email: email.text,
+        password: password.text,
+      );
 
-    if (!mounted) return;
+      print(res); // see and debug
 
-    setState(() => isLoading = false);
+      if (!mounted) return;
 
-    context.go('/home'); // ✅ FIXED
+      context.go('/home');
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+      context.go('/home'); // ✅ FIXED
+    }
   }
 
   @override
@@ -58,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const SizedBox(height: 40),
 
-              /// 🔴 HEADER
+              ///  HEADER
               const Text(
                 "Welcome Back 👋",
                 style: TextStyle(
@@ -75,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 30),
 
-              /// 🧾 FORM CONTAINER
+              ///  FORM CONTAINER
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.all(24),
@@ -90,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       key: _formKey,
                       child: Column(
                         children: [
-                          /// 📧 EMAIL
+                          ///  EMAIL
                           TextFormField(
                             controller: email,
                             keyboardType: TextInputType.emailAddress,
@@ -102,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           const SizedBox(height: 14),
 
-                          /// 🔒 PASSWORD
+                          ///  PASSWORD
                           TextFormField(
                             controller: password,
                             obscureText: obscurePassword,
@@ -127,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           const SizedBox(height: 10),
 
-                          /// ✅ REMEMBER + FORGOT
+                          ///  REMEMBER + FORGOT
                           Row(
                             children: [
                               Checkbox(
@@ -150,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           const SizedBox(height: 10),
 
-                          /// 🚀 LOGIN BUTTON
+                          ///  LOGIN BUTTON
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(

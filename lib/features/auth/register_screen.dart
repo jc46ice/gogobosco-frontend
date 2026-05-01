@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gogobosco/services/auth_services.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -22,20 +23,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool isLoading = false;
   bool obscurePassword = true;
 
-  /// 🔥 REGISTER LOGIC
+  /// REGISTER LOGIC
   void register() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => isLoading = true);
 
-    await Future.delayed(const Duration(seconds: 2)); // simulate API
+    try {
+      final res = await AuthService.register(
+        firstName: firstName.text,
+        lastName: lastName.text,
+        email: email.text,
+        phone: phone.text,
+        password: password.text,
+        role: role,
+      );
 
-    if (!mounted) return;
+      print(res);
 
-    setState(() => isLoading = false);
+      if (!mounted) return;
 
-    // ✅ Navigate AFTER loading completes
-    context.go('/register');
+      context.go('/home');
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+      // ✅ Navigate AFTER loading completes
+      context.go('/register');
+    }
   }
 
   @override
