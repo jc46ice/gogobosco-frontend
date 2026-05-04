@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gogobosco/app.dart';
+import 'package:gogobosco_frontend/app.dart';
 
 void main() {
   runApp(const GoGoBoscoApp());
