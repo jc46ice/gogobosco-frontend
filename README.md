@@ -1,6 +1,6 @@
 # gogobosco
 
-The Frontend of our GoGo Bosco android app project in Flutter.
+A new Flutter project.
 
 ## Getting Started
 
